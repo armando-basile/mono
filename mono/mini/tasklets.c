@@ -7,38 +7,27 @@
 
 #if defined(MONO_SUPPORT_TASKLETS)
 
-/* keepalive_stacks could be a per-stack var to avoid locking overhead */
-static MonoGHashTable *keepalive_stacks = NULL;
-static CRITICAL_SECTION tasklets_mutex;
-#define tasklets_lock() EnterCriticalSection(&tasklets_mutex)
-#define tasklets_unlock() LeaveCriticalSection(&tasklets_mutex)
-
-/* LOCKING: tasklets_mutex is assumed to e taken */
-static void
-internal_init (void)
-{
-	if (keepalive_stacks)
-		return;
-	MONO_GC_REGISTER_ROOT_PINNING (keepalive_stacks);
-	keepalive_stacks = mono_g_hash_table_new (NULL, NULL);
-}
-
 static void*
 continuation_alloc (void)
 {
 	MonoContinuation *cont = g_new0 (MonoContinuation, 1);
+
+	cont->keepalive_stacks = mono_g_hash_table_new (NULL, NULL);
+	MONO_GC_REGISTER_ROOT_PINNING (cont->keepalive_stacks);
+
 	return cont;
 }
 
 static void
 continuation_free (MonoContinuation *cont)
 {
-	if (cont->saved_stack) {
-		tasklets_lock ();
-		mono_g_hash_table_remove (keepalive_stacks, cont->saved_stack);
-		tasklets_unlock ();
+	/* implicitly deregisters the table as a root */
+	if (cont->keepalive_stacks)
+		mono_g_hash_table_destroy (cont->keepalive_stacks);
+
+	if (cont->saved_stack)
 		mono_gc_free_fixed (cont->saved_stack);
-	}
+
 	g_free (cont);
 }
 
@@ -109,17 +98,18 @@ continuation_store (MonoContinuation *cont, int state, MonoException **e)
 		}
 		cont->stack_used_size = num_bytes;
 	} else {
-		tasklets_lock ();
-		internal_init ();
+		if (cont->keepalive_stacks) {
+			cont->keepalive_stacks = mono_g_hash_table_new (NULL, NULL);
+			MONO_GC_REGISTER_ROOT_PINNING (cont->keepalive_stacks);
+		}
 		if (cont->saved_stack) {
-			mono_g_hash_table_remove (keepalive_stacks, cont->saved_stack);
+			mono_g_hash_table_remove (cont->keepalive_stacks, cont->saved_stack);
 			mono_gc_free_fixed (cont->saved_stack);
 		}
 		cont->stack_used_size = num_bytes;
 		cont->stack_alloc_size = num_bytes * 1.1;
 		cont->saved_stack = mono_gc_alloc_fixed (cont->stack_alloc_size, NULL);
-		mono_g_hash_table_insert (keepalive_stacks, cont->saved_stack, cont->saved_stack);
-		tasklets_unlock ();
+		mono_g_hash_table_insert (cont->keepalive_stacks, cont->saved_stack, cont->saved_stack);
 	}
 	memcpy (cont->saved_stack, cont->return_sp, num_bytes);
 
@@ -146,8 +136,6 @@ continuation_restore (MonoContinuation *cont, int state)
 void
 mono_tasklets_init (void)
 {
-	InitializeCriticalSection (&tasklets_mutex);
-
 	mono_add_internal_call ("Mono.Tasklets.Continuation::alloc", continuation_alloc);
 	mono_add_internal_call ("Mono.Tasklets.Continuation::free", continuation_free);
 	mono_add_internal_call ("Mono.Tasklets.Continuation::mark", continuation_mark_frame);

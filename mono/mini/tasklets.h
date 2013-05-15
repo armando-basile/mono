@@ -6,8 +6,13 @@
 typedef struct {
 	MonoLMF *lmf;
 	gpointer top_sp;
+
+	/* used to ensure continuations aren't done from another thread/domain */
 	gsize thread_id;
 	MonoDomain *domain;
+
+	/* stores stack copies that need to be kept alive by the GC */
+	MonoGHashTable *keepalive_stacks;
 
 	/* the instruction pointer and stack to return to on Restore */
 	gpointer return_ip;
@@ -16,6 +21,7 @@ typedef struct {
 	/* the saved stack information */
 	int stack_alloc_size;
 	int stack_used_size;
+
 	/* pointer to GC memory */
 	gpointer saved_stack;
 } MonoContinuation;
