@@ -60,10 +60,13 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	ctx_reg = ARMREG_R0;
 
-#if defined(ARM_FPU_VFP)
-	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, fregs));
-	ARM_FLDMD (code, ARM_VFP_D0, 16, ARMREG_IP);
-#endif
+	if (!mono_arch_is_soft_float ()) {
+		ARM_ADD_REG_IMM8 (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, fregs));
+		ARM_FLDMD (code, ARM_VFP_D0, 16, ARMREG_IP, FALSE);
+
+		if (mono_arm_vfp_registers () == 32)
+			ARM_FLDMD (code, ARM_VFP_D0, 16, ARMREG_IP, TRUE);
+	}
 
 	/* move pc to PC */
 	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, pc));
@@ -151,7 +154,9 @@ mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_
 	MONO_CONTEXT_SET_SP (&ctx, sp);
 	MONO_CONTEXT_SET_IP (&ctx, pc);
 	memcpy (((guint8*)&ctx.regs) + (ARMREG_R4 * sizeof (mgreg_t)), int_regs, 8 * sizeof (mgreg_t));
-	memcpy (&ctx.fregs, fp_regs, sizeof (double) * 16);
+
+	if (!mono_arch_is_soft_float ())
+		memcpy (&ctx.fregs, fp_regs, sizeof (double) * mono_arm_vfp_registers ());
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
@@ -185,6 +190,9 @@ mono_arm_resume_unwind (guint32 dummy1, mgreg_t pc, mgreg_t sp, mgreg_t *int_reg
 	MONO_CONTEXT_SET_SP (&ctx, sp);
 	MONO_CONTEXT_SET_IP (&ctx, pc);
 	memcpy (((guint8*)&ctx.regs) + (ARMREG_R4 * sizeof (mgreg_t)), int_regs, 8 * sizeof (mgreg_t));
+
+	if (!mono_arch_is_soft_float ())
+		memcpy (&ctx.fregs, fp_regs, sizeof (double) * mono_arm_vfp_registers ());
 
 	mono_resume_unwind (&ctx);
 }
@@ -220,12 +228,15 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	mono_add_unwind_op_offset (unwind_ops, code, start, ARMREG_LR, - sizeof (mgreg_t));
 
 	/* Save fp regs */
-	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (double) * 16);
-	cfa_offset += sizeof (double) * 16;
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
-#if defined(ARM_FPU_VFP)
-	ARM_FSTMD (code, ARM_VFP_D0, 16, ARMREG_SP);
-#endif
+	if (!mono_arch_is_soft_float ()) {
+		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (double) * mono_arm_vfp_registers ());
+		cfa_offset += sizeof (double) * mono_arm_vfp_registers ();
+		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
+		ARM_FSTMD (code, ARM_VFP_D0, 16, ARMREG_SP, FALSE);
+
+		if (mono_arm_vfp_registers () == 32)
+			ARM_FSTMD (code, ARM_VFP_D0, 16, ARMREG_SP, TRUE);
+	}
 
 	/* Param area */
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 8);
