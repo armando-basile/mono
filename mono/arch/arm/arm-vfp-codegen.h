@@ -114,12 +114,12 @@ enum {
 	(((Fm) & 1) << 5)			|	\
 	ARM_DEF_COND(cond)
 
-#define ARM_DEF_VFP_LSF(cond,cp,post,ls,wback,basereg,Fd,offset)	\
+#define ARM_DEF_VFP_LSF(cond,cp,post,ls,wback,basereg,Fd,offset,D)	\
 	((offset) >= 0? (offset)>>2: -(offset)>>2)	|	\
 	(6 << 25)					|	\
 	((cp) << 8)					|	\
 	(((Fd) >> 1) << 12)				|	\
-	(((Fd) & 1) << 22)				|	\
+	((D) << 22)					|	\
 	((basereg) << 16)				|	\
 	((ls) << 20)					|	\
 	((wback) << 21)					|	\
@@ -141,36 +141,36 @@ enum {
 
 /* FP load and stores */
 #define ARM_FLDS_COND(p,freg,base,offset,cond)	\
-	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_SINGLE,1,ARMOP_LDR,0,(base),(freg),(offset)))
+	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_SINGLE,1,ARMOP_LDR,0,(base),(freg),(offset),0))
 #define ARM_FLDS(p,freg,base,offset)	\
 	ARM_FLDS_COND(p,freg,base,offset,ARMCOND_AL)
 
 #define ARM_FLDD_COND(p,freg,base,offset,cond)	\
-	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_DOUBLE,1,ARMOP_LDR,0,(base),(freg),(offset)))
+	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_DOUBLE,1,ARMOP_LDR,0,(base),(freg),(offset),0))
 #define ARM_FLDD(p,freg,base,offset)	\
 	ARM_FLDD_COND(p,freg,base,offset,ARMCOND_AL)
 
 #define ARM_FSTS_COND(p,freg,base,offset,cond)	\
-	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_SINGLE,1,ARMOP_STR,0,(base),(freg),(offset)))
+	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_SINGLE,1,ARMOP_STR,0,(base),(freg),(offset),0))
 #define ARM_FSTS(p,freg,base,offset)	\
 	ARM_FSTS_COND(p,freg,base,offset,ARMCOND_AL)
 
 #define ARM_FSTD_COND(p,freg,base,offset,cond)	\
-	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_DOUBLE,1,ARMOP_STR,0,(base),(freg),(offset)))
+	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_DOUBLE,1,ARMOP_STR,0,(base),(freg),(offset),0))
 #define ARM_FSTD(p,freg,base,offset)	\
 	ARM_FSTD_COND(p,freg,base,offset,ARMCOND_AL)
 
-#define ARM_FLDMD_COND(p,first_reg,nregs,base,cond)							\
-	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_DOUBLE,0,ARMOP_LDR,0,(base),(first_reg),((nregs) * 2) << 2))
+#define ARM_FLDMD_COND(p,first_reg,nregs,base,D,cond)							\
+	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_DOUBLE,0,ARMOP_LDR,0,(base),(first_reg),((nregs) * 2) << 2,(D)))
 
-#define ARM_FLDMD(p,first_reg,nregs,base)		\
-	ARM_FLDMD_COND(p,first_reg,nregs,base,ARMCOND_AL)
+#define ARM_FLDMD(p,first_reg,nregs,base,D)		\
+	ARM_FLDMD_COND(p,first_reg,nregs,base,D,ARMCOND_AL)
 
-#define ARM_FSTMD_COND(p,first_reg,nregs,base,cond)							\
-	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_DOUBLE,0,ARMOP_STR,0,(base),(first_reg),((nregs) * 2) << 2))
+#define ARM_FSTMD_COND(p,first_reg,nregs,base,D,cond)							\
+	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_DOUBLE,0,ARMOP_STR,0,(base),(first_reg),((nregs) * 2) << 2,(D)))
 
-#define ARM_FSTMD(p,first_reg,nregs,base)		\
-	ARM_FSTMD_COND(p,first_reg,nregs,base,ARMCOND_AL)
+#define ARM_FSTMD(p,first_reg,nregs,base,D)		\
+	ARM_FSTMD_COND(p,first_reg,nregs,base,D,ARMCOND_AL)
 
 #include <mono/arch/arm/arm_vfpmacros.h>
 
