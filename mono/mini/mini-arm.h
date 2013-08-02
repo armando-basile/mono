@@ -299,4 +299,10 @@ guint8*
 mono_arm_load_jumptable_entry (guint8 *code, gpointer *jte, ARMReg reg) MONO_INTERNAL;
 #endif
 
+gboolean
+mono_arm_is_hard_float (void) MONO_INTERNAL;
+
+guint32
+mono_arm_vfp_registers (void) MONO_INTERNAL;
+
 #endif /* __MONO_MINI_ARM_H__ */

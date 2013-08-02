@@ -119,6 +119,11 @@ static gboolean iphone_abi = FALSE;
  */
 static MonoArmFPU arm_fpu;
 
+/*
+ * If TRUE, the processor has 32 double-precision registers.
+ */
+static gboolean arm_fpu_is_d32 = FALSE;
+
 static int i8_align;
 
 static volatile int ss_trigger_var = 0;
@@ -826,6 +831,9 @@ mono_arch_init (void)
 #endif
 #endif
 
+	/* TODO: Always FALSE on iOS (see comment below). */
+	arm_fpu_is_d32 = mono_hwcap_arm_has_vfp3 && !mono_hwcap_arm_has_vfp3_d16;
+
 	v5_supported = mono_hwcap_arm_is_v5;
 	v6_supported = mono_hwcap_arm_is_v6;
 	v7_supported = mono_hwcap_arm_is_v7;
@@ -917,6 +925,24 @@ mono_arch_is_soft_float (void)
 	return arm_fpu == MONO_ARM_FPU_NONE;
 }
 #endif
+
+gboolean
+mono_arm_is_hard_float (void)
+{
+	return arm_fpu == MONO_ARM_FPU_VFP_HARD;
+}
+
+guint32
+mono_arm_vfp_registers (void)
+{
+	if (arm_fpu == MONO_ARM_FPU_NONE)
+		return 0;
+
+	if (arm_fpu_is_d32)
+		return 32;
+	else
+		return 16;
+}
 
 static gboolean
 is_regsize_var (MonoGenericSharingContext *gsctx, MonoType *t) {
