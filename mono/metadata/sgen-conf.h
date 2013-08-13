@@ -99,7 +99,7 @@ typedef guint64 mword;
 
 #ifndef SGEN_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
-#define MANAGED_ALLOCATION
+//#define MANAGED_ALLOCATION
 #ifndef XDOMAIN_CHECKS_IN_WBARRIER
 #define MANAGED_WBARRIER
 #endif
