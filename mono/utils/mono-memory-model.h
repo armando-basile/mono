@@ -139,8 +139,9 @@ LDR R3, [R4, R0]
 
 /*Makes sure all previous stores as visible before */
 #define mono_atomic_store_seq(target,value) do {	\
-	STORE_STORE_FENCE;	\
+	MEMORY_BARRIER;	\
 	*(target) = (value);	\
+	MEMORY_BARRIER;	\
 } while (0)
 
 
