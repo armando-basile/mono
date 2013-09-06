@@ -144,6 +144,13 @@ LDR R3, [R4, R0]
 	MEMORY_BARRIER;	\
 } while (0)
 
+#define mono_atomic_load_seq(var,_type,target) do {	\
+	_type __tmp = *target;	\
+	MEMORY_BARRIER;	\
+	(var) = __tmp; \
+	MEMORY_BARRIER;	\
+} while (0)
+
 
 /*
 Acquire/release semantics macros.
