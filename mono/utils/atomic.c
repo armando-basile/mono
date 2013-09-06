@@ -318,7 +318,11 @@ gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 
 #if defined(BROKEN_64BIT_ATOMICS)
 
-#if defined (TARGET_MACH) && defined (__arm__) && defined (HAVE_ARMV7)
+#if defined (TARGET_MACH) && defined (__arm__)
+
+#if !defined (HAVE_ARMV7)
+#include <mono/utils/mono-hwcap-arm.h>
+#endif
 
 gint64
 InterlockedCompareExchange64_asm(volatile gint64 *dest, gint64 exch, gint64 comp) __attribute__ ((naked));
@@ -356,6 +360,8 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 	   case. This may change in the future if we align managed longs to
 	   8 bytes. */
 	if ((size_t) location & 0x7) {
+	lock_path:
+
 		gint64 old;
 
 		pthread_mutex_lock (&spin);
@@ -368,7 +374,16 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 		return old;
 	}
 
+	/* Now for some fun static and dynamic platform detection... */
+#if defined (HAVE_ARMV7)
 	return InterlockedCompareExchange64_asm (location, exch, comp);
+#else
+	if (mono_hwcap_arm_is_v7) {
+		return InterlockedCompareExchange64_asm (location, exch, comp);
+	} else {
+		goto lock_path;
+	}
+#endif
 }
 
 #elif defined (TARGET_MACH) && (defined (__i386__) || defined(__x86_64__))
