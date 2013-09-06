@@ -68,7 +68,17 @@ static inline gint32 InterlockedIncrement(volatile gint32 *val)
 	return __sync_add_and_fetch (val, 1);
 }
 
+static inline gint64 InterlockedIncrement64(volatile gint64 *val)
+{
+	return __sync_add_and_fetch (val, 1);
+}
+
 static inline gint32 InterlockedDecrement(volatile gint32 *val)
+{
+	return __sync_add_and_fetch (val, -1);
+}
+
+static inline gint64 InterlockedDecrement64(volatile gint64 *val)
 {
 	return __sync_add_and_fetch (val, -1);
 }
@@ -566,7 +576,9 @@ extern gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpoin
 extern gint32 InterlockedAdd(volatile gint32 *dest, gint32 add);
 extern gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add);
 extern gint32 InterlockedIncrement(volatile gint32 *dest);
+extern gint64 InterlockedIncrement64(volatile gint64 *dest);
 extern gint32 InterlockedDecrement(volatile gint32 *dest);
+extern gint64 InterlockedDecrement64(volatile gint64 *dest);
 extern gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch);
 extern gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch);
 extern gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add);

@@ -151,9 +151,55 @@ gint32 InterlockedIncrement(volatile gint32 *dest)
 	return(ret);
 }
 
+gint64 InterlockedIncrement64(volatile gint64 *dest)
+{
+	gint64 ret;
+	int thr_ret;
+	
+	mono_once(&spin_once, spin_init);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
+
+	(*dest)++;
+	ret= *dest;
+	
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
+	
+	return(ret);
+}
+
 gint32 InterlockedDecrement(volatile gint32 *dest)
 {
 	gint32 ret;
+	int thr_ret;
+	
+	mono_once(&spin_once, spin_init);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
+	
+	(*dest)--;
+	ret= *dest;
+	
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
+	
+	return(ret);
+}
+
+gint64 InterlockedDecrement64(volatile gint64 *dest)
+{
+	gint64 ret;
 	int thr_ret;
 	
 	mono_once(&spin_once, spin_init);
