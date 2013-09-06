@@ -94,6 +94,14 @@ static inline gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 
 
 #endif
 
+static inline gint64 InterlockedExchange64(volatile gint64 *val, gint64 new_val)
+{
+	gint64 old_val;
+	do {
+		old_val = *val;
+	} while (InterlockedCompareExchange64 (val, new_val, old_val) != old_val);
+	return old_val;
+}
 
 #elif defined(__NetBSD__) && defined(HAVE_ATOMIC_OPS)
 
@@ -547,5 +555,7 @@ extern gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add);
 #ifndef HAS_64BITS_ATOMICS
 extern gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp);
 #endif
+
+extern gint64 InterlockedExchange64(volatile gint64 *dest, gint64 exch);
 
 #endif /* _WAPI_ATOMIC_H_ */
