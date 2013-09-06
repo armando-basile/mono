@@ -13,7 +13,7 @@
 
 #include <mono/utils/atomic.h>
 
-#if defined (WAPI_NO_ATOMIC_ASM) || !defined (HAS_64BITS_ATOMICS)
+#if defined (WAPI_NO_ATOMIC_ASM) || defined (BROKEN_64BIT_ATOMICS)
 
 #include <pthread.h>
 
@@ -312,9 +312,11 @@ gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 	return(ret);
 }
 
+#define NEED_64BIT_CMPXCHG 1
+
 #endif
 
-#ifndef HAS_64BITS_ATOMICS
+#if defined(BROKEN_64BIT_ATOMICS)
 
 #if defined (TARGET_MACH) && defined (TARGET_ARM) && (defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7S__))
 
@@ -379,6 +381,13 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 
 #else
 
+#define NEED_64BIT_CMPXCHG 1
+
+#endif
+#endif
+
+#if defined(NEED_64BIT_CMPXCHG)
+
 gint64
 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
@@ -394,5 +403,4 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 	return old;
 }
 
-#endif
 #endif
