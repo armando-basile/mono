@@ -37,7 +37,6 @@
 #if defined(__WIN32__) || defined(_WIN32)
 
 #include <windows.h>
-#define HAS_64BITS_ATOMICS 1
 
 /* Prefer GCC atomic ops if the target supports it (see configure.in). */
 #elif defined(USE_GCC_ATOMIC_OPS)
@@ -58,27 +57,12 @@ static inline gint32 InterlockedAdd(volatile gint32 *dest, gint32 add)
 	return __sync_add_and_fetch (dest, add);
 }
 
-static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
-{
-	return __sync_add_and_fetch (dest, add);
-}
-
 static inline gint32 InterlockedIncrement(volatile gint32 *val)
 {
 	return __sync_add_and_fetch (val, 1);
 }
 
-static inline gint64 InterlockedIncrement64(volatile gint64 *val)
-{
-	return __sync_add_and_fetch (val, 1);
-}
-
 static inline gint32 InterlockedDecrement(volatile gint32 *val)
-{
-	return __sync_add_and_fetch (val, -1);
-}
-
-static inline gint64 InterlockedDecrement64(volatile gint64 *val)
 {
 	return __sync_add_and_fetch (val, -1);
 }
@@ -109,20 +93,75 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 
 /*All Apple targets have broken compilers*/
 #if defined (TARGET_MACH)
-#define BROKEN_64BIT_ATOMICS_INTRINSIC 1
+#define BROKEN_64BIT_ATOMICS 1
 #endif
 
-
-#if !defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
-#define HAS_64BITS_ATOMICS 1
+#if !defined (BROKEN_64BIT_ATOMICS)
 
 static inline gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
 	return __sync_val_compare_and_swap (dest, comp, exch);
 }
 
+static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
+{
+	return __sync_add_and_fetch (dest, add);
+}
+
+static inline gint64 InterlockedIncrement64(volatile gint64 *val)
+{
+	return __sync_add_and_fetch (val, 1);
+}
+
+static inline gint64 InterlockedDecrement64(volatile gint64 *val)
+{
+	return __sync_add_and_fetch (val, -1);
+}
+
+#else
+
+/* Implement 64-bit cmpxchg by hand or emulate it. */
+extern gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp);
+
+/* Implement all other 64-bit atomics in terms of a specialized CAS
+ * in this case, since chances are that the other 64-bit atomic
+ * intrinsics are broken too.
+ */
+
+static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
+{
+	gint64 get, set;
+	do {
+		get = *val;
+		set = get + add;
+	} while (InterlockedCompareExchange64 (dest, set, get) != set);
+	return set;
+}
+
+static inline gint64 InterlockedIncrement64(volatile gint64 *val)
+{
+	gint64 get, set;
+	do {
+		get = *val;
+		set = get + 1;
+	} while (InterlockedCompareExchange64 (dest, set, get) != set);
+	return set;
+}
+
+static inline gint64 InterlockedDecrement64(volatile gint64 *val)
+{
+	gint64 get, set;
+	do {
+		get = *val;
+		set = get - 1;
+	} while (InterlockedCompareExchange64 (dest, set, get) != set);
+	return set;
+}
+
 #endif
 
+/* We always implement this in terms of a 64-bit cmpxchg since
+ * GCC doesn't have an intrisic to model it anyway. */
 static inline gint64 InterlockedExchange64(volatile gint64 *val, gint64 new_val)
 {
 	gint64 old_val;
@@ -572,6 +611,7 @@ static inline gint32 InterlockedExchangeAdd(gint32 volatile *val, gint32 add)
 #define WAPI_NO_ATOMIC_ASM
 
 extern gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp);
+extern gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp);
 extern gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp);
 extern gint32 InterlockedAdd(volatile gint32 *dest, gint32 add);
 extern gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add);
@@ -580,15 +620,10 @@ extern gint64 InterlockedIncrement64(volatile gint64 *dest);
 extern gint32 InterlockedDecrement(volatile gint32 *dest);
 extern gint64 InterlockedDecrement64(volatile gint64 *dest);
 extern gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch);
+extern gint64 InterlockedExchange64(volatile gint64 *dest, gint64 exch);
 extern gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch);
 extern gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add);
 
 #endif
-
-#ifndef HAS_64BITS_ATOMICS
-extern gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp);
-#endif
-
-extern gint64 InterlockedExchange64(volatile gint64 *dest, gint64 exch);
 
 #endif /* _WAPI_ATOMIC_H_ */
