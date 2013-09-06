@@ -205,11 +205,6 @@ static gboolean resume_thread_internal (MonoInternalThread *thread);
 static MonoException* mono_thread_execute_interruption (MonoInternalThread *thread);
 static void ref_stack_destroy (gpointer rs);
 
-/* Spin lock for InterlockedXXX 64 bit functions */
-#define mono_interlocked_lock() EnterCriticalSection (&interlocked_mutex)
-#define mono_interlocked_unlock() LeaveCriticalSection (&interlocked_mutex)
-static CRITICAL_SECTION interlocked_mutex;
-
 /* global count of thread interruptions requested */
 static gint32 thread_interruption_requested = 0;
 
@@ -2534,7 +2529,6 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 		       MonoThreadAttachCB attach_cb)
 {
 	InitializeCriticalSection(&threads_mutex);
-	InitializeCriticalSection(&interlocked_mutex);
 	InitializeCriticalSection(&contexts_mutex);
 	
 	background_change_event = CreateEvent (NULL, TRUE, FALSE, NULL);
@@ -2578,7 +2572,6 @@ void mono_thread_cleanup (void)
 	 * called.
 	 */
 	DeleteCriticalSection (&threads_mutex);
-	DeleteCriticalSection (&interlocked_mutex);
 	DeleteCriticalSection (&contexts_mutex);
 	DeleteCriticalSection (&delayed_free_table_mutex);
 	DeleteCriticalSection (&small_id_mutex);
