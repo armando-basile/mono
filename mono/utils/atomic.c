@@ -318,7 +318,7 @@ gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 
 #if defined(BROKEN_64BIT_ATOMICS)
 
-#if defined (TARGET_MACH) && defined (TARGET_ARM) && (defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7S__))
+#if defined (TARGET_MACH) && defined (TARGET_ARM) && defined (HAVE_ARMV7)
 
 gint64
 InterlockedCompareExchange64_asm(volatile gint64 *dest, gint64 exch, gint64 comp) __attribute__ ((naked));
