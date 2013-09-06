@@ -1873,48 +1873,18 @@ gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location,
 gint64 
 ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 value)
 {
-#if SIZEOF_VOID_P == 8
-	return (gint64) InterlockedExchangePointer((gpointer *) location, (gpointer)value);
-#else
-	gint64 res;
-
-	/* 
-	 * According to MSDN, this function is only atomic with regards to the 
-	 * other Interlocked functions on 32 bit platforms.
-	 */
-	mono_interlocked_lock ();
-	res = *location;
-	*location = value;
-	mono_interlocked_unlock ();
-
-	return res;
-#endif
+	return InterlockedExchange64 (location, value);
 }
 
 gdouble 
 ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location, gdouble value)
 {
-#if SIZEOF_VOID_P == 8
 	LongDoubleUnion val, ret;
 
 	val.fval = value;
-	ret.ival = (gint64)InterlockedExchangePointer((gpointer *) location, (gpointer)val.ival);
+	ret.ival = InterlockedExchange64 ((gint64 *) location, val.ival);
 
 	return ret.fval;
-#else
-	gdouble res;
-
-	/* 
-	 * According to MSDN, this function is only atomic with regards to the 
-	 * other Interlocked functions on 32 bit platforms.
-	 */
-	mono_interlocked_lock ();
-	res = *location;
-	*location = value;
-	mono_interlocked_unlock ();
-
-	return res;
-#endif
 }
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand)
