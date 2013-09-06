@@ -24,6 +24,15 @@
 #include "config.h"
 #include <glib.h>
 
+/* FIXME: We lack the following atomics for all non-GCC, non-Windows paths:
+ * InterlockedCompareExchange64
+ * InterlockedExchange64
+ * InterlockedAdd
+ * InterlockedAdd64
+ * InterlockedIncrement64
+ * InterlockedDecrement64
+ */
+
 /* On Windows, we always use the functions provided by the Windows API. */
 #if defined(__WIN32__) || defined(_WIN32)
 
