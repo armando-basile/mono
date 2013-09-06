@@ -169,4 +169,21 @@ Acquire/release semantics macros.
 	STORE_ACQUIRE_FENCE;	\
 	}
 
+/* sequential consistency versions */
+
+#define mono_atomic_load_seq_cst(var,_type,target) do {	\
+	_type __tmp;	\
+	MEMORY_BARRIER;	\
+	__tmp = *target;	\
+	MEMORY_BARRIER;	\
+	(var) = __tmp; \
+} while (0)
+
+#define mono_atomic_store_seq_cst(target,value) do {	\
+	MEMORY_BARRIER;	\
+	*(target) = (value);	\
+	MEMORY_BARRIER;	\
+} while (0)
+
+
 #endif /* _MONO_UTILS_MONO_MEMMODEL_H_ */
