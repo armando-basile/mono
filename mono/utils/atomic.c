@@ -318,10 +318,11 @@ gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 
 #if defined (TARGET_MACH) && defined (TARGET_ARM) && (defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7S__))
 
-gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)  __attribute__ ((naked));
+gint64
+InterlockedCompareExchange64_asm(volatile gint64 *dest, gint64 exch, gint64 comp) __attribute__ ((naked));
 
 gint64
-InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
+InterlockedCompareExchange64_asm(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
 	__asm__ (
 	"push {r4, r5, r6, r7}\n"
@@ -343,6 +344,29 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 	"pop {r4, r5, r6, r7}\n"
 	"bx	lr\n"
 	);
+}
+
+gint64
+InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
+{
+	/* HACK: Because iOS does *not* align 64-bit integers on an 8-byte
+	   boundary, we have to fall back to the lock path in the unaligned
+	   case. This may change in the future if we align managed longs to
+	   8 bytes. */
+	if ((size_t) location & 0x7) {
+		gint64 old;
+
+		pthread_mutex_lock (&spin);
+
+		old = *dest;
+		if(old == comp)
+			*dest = exch;
+
+		pthread_mutex_unlock (&spin);
+		return old;
+	}
+
+	return InterlockedCompareExchange64_asm (location, exch, comp);
 }
 
 #elif defined (TARGET_MACH) && (defined (TARGET_X86) || defined (TARGET_AMD64))
