@@ -82,6 +82,52 @@ gpointer InterlockedCompareExchangePointer(volatile gpointer *dest,
 	return(old);
 }
 
+gint32 InterlockedAdd(volatile gint32 *dest, gint32 add)
+{
+	gint32 ret;
+	int thr_ret;
+	
+	mono_once(&spin_once, spin_init);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
+
+	*dest += add;
+	ret= *dest;
+	
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
+	
+	return(ret);
+}
+
+gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
+{
+	gint64 ret;
+	int thr_ret;
+	
+	mono_once(&spin_once, spin_init);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
+
+	*dest += add;
+	ret= *dest;
+	
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
+	
+	return(ret);
+}
+
 gint32 InterlockedIncrement(volatile gint32 *dest)
 {
 	gint32 ret;
