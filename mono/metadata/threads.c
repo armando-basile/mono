@@ -1923,25 +1923,13 @@ gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *lo
 gdouble
 ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location, gdouble value, gdouble comparand)
 {
-#if SIZEOF_VOID_P == 8
 	LongDoubleUnion val, comp, ret;
 
 	val.fval = value;
 	comp.fval = comparand;
-	ret.ival = (gint64)InterlockedCompareExchangePointer((gpointer *) location, (gpointer)val.ival, (gpointer)comp.ival);
+	ret.ival = InterlockedCompareExchange64 ((gint64 *) location, val.ival, comp.ival);
 
 	return ret.fval;
-#else
-	gdouble old;
-
-	mono_interlocked_lock ();
-	old = *location;
-	if (old == comparand)
-		*location = value;
-	mono_interlocked_unlock ();
-
-	return old;
-#endif
 }
 
 gint64 
