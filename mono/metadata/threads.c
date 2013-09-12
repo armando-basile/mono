@@ -1808,36 +1808,26 @@ HANDLE ves_icall_System_Threading_Events_OpenEvent_internal (MonoString *name,
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedIncrement (location);
 }
 
 gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedIncrement64 (location);
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedDecrement(location);
 }
 
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedDecrement64 (location);
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location, gint32 value)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedExchange(location, value);
 }
 
@@ -1857,8 +1847,6 @@ gpointer ves_icall_System_Threading_Interlocked_Exchange_IntPtr (gpointer *locat
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location, gfloat value)
 {
 	IntFloatUnion val, ret;
-
-	MONO_ARCH_SAVE_REGS;
 
 	val.fval = value;
 	ret.ival = InterlockedExchange((gint32 *) location, val.ival);
@@ -1885,8 +1873,6 @@ ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location, gdoub
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedCompareExchange(location, value, comparand);
 }
 
@@ -1906,8 +1892,6 @@ gpointer ves_icall_System_Threading_Interlocked_CompareExchange_IntPtr(gpointer 
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location, gfloat value, gfloat comparand)
 {
 	IntFloatUnion val, ret, cmp;
-
-	MONO_ARCH_SAVE_REGS;
 
 	val.fval = value;
 	cmp.fval = comparand;
